@@ -1,0 +1,5 @@
+scenario,total_vehicles,completed_vehicles,completion_rate,avg_travel_time_min,avg_reroutes,network_efficiency,avg_delay_min,total_delay_hours,resilience_score
+baseline,1000,978,97.8,2.294058026641367,0.0,97.5906279822391,,,
+incident_light,1000,978,97.8,2.294058026641367,0.0,97.5906279822391,0.0,0.0,100.0
+incident_moderate,1000,978,97.8,2.294058026641367,0.0,97.5906279822391,0.0,0.0,100.0
+road_closure,1000,978,97.8,2.294058026641367,0.0,97.5906279822391,0.0,0.0,100.0

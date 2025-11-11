@@ -4,7 +4,7 @@
 location:
   city: "Guatemala City, Guatemala"
   center_point: [14.6349, -90.5069]  # Lat, Lon del centro de Ciudad de Guatemala
-  radius_km: 10  # Radio de análisis en kilómetros
+  radius_km: 2  # Radio de análisis en kilómetros
   network_type: "drive"  # Tipo de red: drive, walk, bike, all
 
 # Parámetros de la red
@@ -16,7 +16,7 @@ network:
 # Parámetros de simulación
 simulation:
   # Número de agentes (vehículos)
-  num_agents: 1000
+  num_agents: 500
   
   # Duración de la simulación en segundos (1 hora = 3600s)
   duration: 3600
