@@ -45,6 +45,7 @@ class Vehicle:
     total_distance: float = 0.0
     total_time: float = 0.0
     reroute_count: int = 0
+    remaining_edge_time: float = 0.0
     
     def __post_init__(self):
         self.current_node = self.origin
@@ -63,7 +64,7 @@ class TrafficSimulation:
             G: Grafo de la red vial
             config_path: Ruta al archivo de configuración
         """
-        self.G = G.copy()
+        self.G = G
         
         with open(config_path, 'r', encoding='utf-8') as f:
             self.config = yaml.safe_load(f)
@@ -81,8 +82,10 @@ class TrafficSimulation:
         self.completed_vehicles: List[Vehicle] = []
         
         # Métricas
-        self.edge_loads: Dict = {}  # Carga actual en cada arista
+        self.edge_loads: Dict = {}  # Carga actual en cada arista (vehículos que están en ella)
         self.history: List[Dict] = []  # Historia de la simulación
+        
+        self.incident_manager = None
         
         # Inicializar cargas de aristas
         for u, v, k in self.G.edges(keys=True):
@@ -160,6 +163,7 @@ class TrafficSimulation:
             
             vehicle.path = path
             vehicle.path_index = 0
+            vehicle.remaining_edge_time = 0.0
             vehicle.state = AgentState.WAITING
             
             return True
@@ -185,62 +189,87 @@ class TrafficSimulation:
         if vehicle.path_index >= len(vehicle.path) - 1:
             return False
         
-        # Obtener siguiente arista
-        current = vehicle.path[vehicle.path_index]
-        next_node = vehicle.path[vehicle.path_index + 1]
+        # Revisar las próximas 3 aristas de la ruta
+        edges_to_check = min(3, len(vehicle.path) - vehicle.path_index - 1)
         
-        # Buscar la arista en el multigrafo
-        edge_data = None
-        for key in self.G[current][next_node]:
-            edge_data = self.G[current][next_node][key]
-            break
+        for i in range(edges_to_check):
+            current = vehicle.path[vehicle.path_index + i]
+            next_node = vehicle.path[vehicle.path_index + i + 1]
+            
+            # Buscar la arista en el multigrafo
+            if next_node not in self.G[current]:
+                continue
+                
+            edge_key = (current, next_node, 0)
+            current_load = self.edge_loads.get(edge_key, 0)
+            
+            # Umbral de congestión (ajustable)
+            threshold_load = 15
+            
+            if current_load > threshold_load:
+                return True
         
-        if edge_data is None:
-            return False
-        
-        # Calcular congestión
-        edge_key = (current, next_node, 0)
-        current_load = self.edge_loads.get(edge_key, 0)
-        
-        # Si la carga es muy alta, considerar re-enrutamiento
-        threshold_load = 10  # Vehículos por arista
-        
-        return current_load > threshold_load
+        return False
     
     def _move_vehicle(self, vehicle: Vehicle):
         """
-        Mueve un vehículo un paso en su ruta.
+        Mueve un vehículo un paso en su ruta usando tiempos de viaje reales.
         
         Args:
             vehicle: Vehículo a mover
         """
+        
+        # Verificar si ya llegó al destino
         if vehicle.path_index >= len(vehicle.path) - 1:
-            # El vehículo ha llegado
             vehicle.state = AgentState.ARRIVED
             vehicle.arrival_time = self.current_time
             vehicle.total_time = vehicle.arrival_time - vehicle.departure_time
             self.completed_vehicles.append(vehicle)
             return
         
-        # Mover al siguiente nodo
-        current = vehicle.path[vehicle.path_index]
-        next_node = vehicle.path[vehicle.path_index + 1]
+        # Si no está en una arista, iniciar el cruce de la siguiente arista
+        if vehicle.remaining_edge_time <= 0:
+            current = vehicle.path[vehicle.path_index]
+            next_node = vehicle.path[vehicle.path_index + 1]
+            
+            # Verificar que la arista existe
+            if next_node not in self.G[current]:
+                logger.warning(f"Arista {current}->{next_node} no existe para vehículo {vehicle.id}")
+                vehicle.state = AgentState.ARRIVED
+                return
+            
+            # Obtener datos de la arista
+            edge_data = self.G[current][next_node][0]
+            vehicle.remaining_edge_time = edge_data.get('travel_time', self.time_step)
+            
+            # Incrementar la carga de la arista (el vehículo entra a ella)
+            edge_key = (current, next_node, 0)
+            self.edge_loads[edge_key] = self.edge_loads.get(edge_key, 0) + 1
         
-        # Obtener datos de la arista
-        edge_data = self.G[current][next_node][0]
+        # Consumir tiempo de viaje
+        time_consumed = min(vehicle.remaining_edge_time, self.time_step)
+        vehicle.remaining_edge_time -= time_consumed
+        vehicle.total_time += time_consumed
         
-        # Actualizar posición
-        vehicle.current_node = next_node
-        vehicle.path_index += 1
-        vehicle.total_distance += edge_data.get('length', 0)
-        
-        # Actualizar carga de aristas
-        edge_key = (current, next_node, 0)
-        self.edge_loads[edge_key] = self.edge_loads.get(edge_key, 0) + 1
-        
-        # Verificar si debe re-enrutar
-        if self._should_reroute(vehicle):
-            self._reroute_vehicle(vehicle)
+        # Si terminó de atravesar la arista
+        if vehicle.remaining_edge_time <= 0:
+            current = vehicle.path[vehicle.path_index]
+            next_node = vehicle.path[vehicle.path_index + 1]
+            edge_data = self.G[current][next_node][0]
+            
+            # Actualizar posición
+            vehicle.current_node = next_node
+            vehicle.path_index += 1
+            vehicle.total_distance += edge_data.get('length', 0)
+            
+            # Decrementar la carga de la arista (el vehículo sale de ella)
+            edge_key = (current, next_node, 0)
+            if edge_key in self.edge_loads and self.edge_loads[edge_key] > 0:
+                self.edge_loads[edge_key] -= 1
+            
+            # Evaluar re-enrutamiento después de terminar la arista
+            if self._should_reroute(vehicle):
+                self._reroute_vehicle(vehicle)
     
     def _reroute_vehicle(self, vehicle: Vehicle):
         """
@@ -258,14 +287,14 @@ class TrafficSimulation:
         
         self._calculate_route(vehicle)
         vehicle.destination = original_dest
+        vehicle.state = AgentState.TRAVELING
     
     def step(self):
         """
         Ejecuta un paso de la simulación.
         """
-        # Limpiar cargas de aristas
-        for key in self.edge_loads:
-            self.edge_loads[key] = 0
+        if self.incident_manager is not None:
+            self.incident_manager.update_incidents(self.current_time)
         
         # Activar vehículos que deben salir
         vehicles_to_activate = [
@@ -389,7 +418,11 @@ def main():
     """
     Función principal para ejecutar la simulación.
     """
-    from src.data_acquisition import OSMDataAcquisition
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    
+    from data_acquisition import OSMDataAcquisition
     
     # Cargar la red
     acquisitor = OSMDataAcquisition()

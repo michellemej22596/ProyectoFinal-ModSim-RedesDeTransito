@@ -16,6 +16,7 @@ from src.agent_simulation import TrafficSimulation
 from src.incident_manager import IncidentManager
 from src.metrics_analyzer import MetricsAnalyzer
 from src.visualization import Visualizer
+from src.ml_explainability import MLExplainabilityAnalyzer
 
 import argparse
 import pickle
@@ -47,18 +48,25 @@ def run_scenario(
     logger.info(f"EJECUTANDO ESCENARIO: {scenario_name.upper()}")
     logger.info(f"{'='*70}\n")
     
-    # Crear instancia de gestor de incidentes
-    incident_mgr = IncidentManager(G)
+    G_scenario = G.copy()
+    
+    # Crear instancia de gestor de incidentes CON EL GRAFO DEL ESCENARIO
+    incident_mgr = IncidentManager(G_scenario)
     
     # Crear incidente si no es baseline
     if scenario_name != 'baseline':
         incident = incident_mgr.create_incident_from_scenario(
             scenario_name,
-            start_time=duration * 0.3  # Incidente a los 30% del tiempo
+            start_time=0  # Aplicar incidente desde el inicio
         )
+        # Aplicar el incidente inmediatamente
+        if incident:
+            incident_mgr.apply_incident(incident)
     
-    # Crear simulación
-    sim = TrafficSimulation(G)
+    sim = TrafficSimulation(G_scenario)
+    
+    sim.incident_manager = incident_mgr
+    
     sim.run(num_agents=num_agents, progress_bar=True)
     
     # Obtener resultados
@@ -85,19 +93,25 @@ def main():
     parser.add_argument(
         '--agents',
         type=int,
-        default=1000,
+        default=None,
         help='Número de agentes (vehículos)'
     )
     parser.add_argument(
         '--duration',
         type=int,
-        default=3600,
+        default=None,
         help='Duración de la simulación en segundos'
     )
     parser.add_argument(
         '--download',
         action='store_true',
         help='Descargar datos de OSM antes de simular'
+    )
+    parser.add_argument(
+        '--ml-analysis',
+        action='store_true',
+        default=True,
+        help='Ejecutar análisis ML con SHAP values (default: True)'
     )
     
     args = parser.parse_args()
@@ -112,6 +126,13 @@ def main():
         logger.info("Cargando red desde archivo...")
         G = acquisitor.load_network()
     
+    import yaml
+    with open('config.yaml', 'r', encoding='utf-8') as f:
+        config = yaml.safe_load(f)
+    
+    num_agents = args.agents if args.agents else config['simulation']['num_agents']
+    duration = args.duration if args.duration else config['simulation']['duration']
+    
     # Determinar escenarios a ejecutar
     if args.scenario == 'all':
         scenarios = ['baseline', 'incident_light', 'incident_moderate', 'road_closure']
@@ -125,8 +146,8 @@ def main():
         results = run_scenario(
             G,
             scenario,
-            num_agents=args.agents,
-            duration=args.duration
+            num_agents=num_agents,
+            duration=duration
         )
         all_results[scenario] = results
     
@@ -172,6 +193,19 @@ def main():
     # Comparación de escenarios
     comparison_df = analyzer.compare_scenarios(all_results)
     viz.plot_scenario_comparison(comparison_df)
+    
+    if args.ml_analysis:
+        logger.info("\n" + "="*70)
+        logger.info("EJECUTANDO ANÁLISIS ML + SHAP")
+        logger.info("="*70 + "\n")
+        
+        ml_analyzer = MLExplainabilityAnalyzer(output_dir="results/ml_analysis")
+        ml_results = ml_analyzer.run_full_analysis(all_results)
+        
+        logger.info("\nAnálisis ML completado:")
+        logger.info(f"  - R² Score: {ml_results['model_metrics']['test']['r2']:.4f}")
+        logger.info(f"  - RMSE: {ml_results['model_metrics']['test']['rmse']:.2f} segundos")
+        logger.info(f"  - Visualizaciones SHAP guardadas en: results/ml_analysis/")
     
     logger.info("\n" + "="*70)
     logger.info("SIMULACIÓN COMPLETADA")

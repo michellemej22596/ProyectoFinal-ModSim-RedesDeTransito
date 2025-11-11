@@ -5,24 +5,24 @@ REPORTE DE ANÁLISIS - RED VIAL EN CRISIS
 COMPARACIÓN DE ESCENARIOS
 ----------------------------------------------------------------------
          scenario  total_vehicles  completed_vehicles  completion_rate  avg_travel_time_min  avg_reroutes  network_efficiency  avg_delay_min  total_delay_hours  resilience_score
-         baseline            1000                 978             97.8             2.294058           0.0           97.590628            NaN                NaN               NaN
-   incident_light            1000                 978             97.8             2.294058           0.0           97.590628            0.0                0.0             100.0
-incident_moderate            1000                 978             97.8             2.294058           0.0           97.590628            0.0                0.0             100.0
-     road_closure            1000                 978             97.8             2.294058           0.0           97.590628            0.0                0.0             100.0
+         baseline             300                 287        95.666667             9.768868           0.0           91.754088            NaN                NaN               NaN
+   incident_light             300                 287        95.666667             9.770611           0.0           91.752926       0.001742           0.008333         99.998734
+incident_moderate             300                 287        95.666667             9.768868           0.0           91.754088       0.000000           0.000000        100.000000
+     road_closure             300                 287        95.666667             9.768868           0.0           91.754088       0.000000           0.000000        100.000000
 
 
 ESCENARIO: BASELINE
 ----------------------------------------------------------------------
 
 Tiempos de Viaje:
-  mean_travel_time_min: 2.29
-  median_travel_time_min: 2.17
-  std_travel_time_min: 1.03
-  min_travel_time_min: 0.12
-  max_travel_time_min: 5.88
-  percentile_25: 1.55
-  percentile_75: 3.00
-  percentile_95: 4.10
+  mean_travel_time_min: 9.77
+  median_travel_time_min: 9.68
+  std_travel_time_min: 4.19
+  min_travel_time_min: 1.07
+  max_travel_time_min: 20.13
+  percentile_25: 6.65
+  percentile_75: 12.74
+  percentile_95: 16.98
 
 Re-enrutamiento:
   total_reroutes: 0.00
@@ -35,14 +35,14 @@ ESCENARIO: INCIDENT_LIGHT
 ----------------------------------------------------------------------
 
 Tiempos de Viaje:
-  mean_travel_time_min: 2.29
-  median_travel_time_min: 2.17
-  std_travel_time_min: 1.03
-  min_travel_time_min: 0.12
-  max_travel_time_min: 5.88
-  percentile_25: 1.55
-  percentile_75: 3.00
-  percentile_95: 4.10
+  mean_travel_time_min: 9.77
+  median_travel_time_min: 9.68
+  std_travel_time_min: 4.19
+  min_travel_time_min: 1.07
+  max_travel_time_min: 20.13
+  percentile_25: 6.65
+  percentile_75: 12.74
+  percentile_95: 16.98
 
 Re-enrutamiento:
   total_reroutes: 0.00
@@ -55,14 +55,14 @@ ESCENARIO: INCIDENT_MODERATE
 ----------------------------------------------------------------------
 
 Tiempos de Viaje:
-  mean_travel_time_min: 2.29
-  median_travel_time_min: 2.17
-  std_travel_time_min: 1.03
-  min_travel_time_min: 0.12
-  max_travel_time_min: 5.88
-  percentile_25: 1.55
-  percentile_75: 3.00
-  percentile_95: 4.10
+  mean_travel_time_min: 9.77
+  median_travel_time_min: 9.68
+  std_travel_time_min: 4.19
+  min_travel_time_min: 1.07
+  max_travel_time_min: 20.13
+  percentile_25: 6.65
+  percentile_75: 12.74
+  percentile_95: 16.98
 
 Re-enrutamiento:
   total_reroutes: 0.00
@@ -75,14 +75,14 @@ ESCENARIO: ROAD_CLOSURE
 ----------------------------------------------------------------------
 
 Tiempos de Viaje:
-  mean_travel_time_min: 2.29
-  median_travel_time_min: 2.17
-  std_travel_time_min: 1.03
-  min_travel_time_min: 0.12
-  max_travel_time_min: 5.88
-  percentile_25: 1.55
-  percentile_75: 3.00
-  percentile_95: 4.10
+  mean_travel_time_min: 9.77
+  median_travel_time_min: 9.68
+  std_travel_time_min: 4.19
+  min_travel_time_min: 1.07
+  max_travel_time_min: 20.13
+  percentile_25: 6.65
+  percentile_75: 12.74
+  percentile_95: 16.98
 
 Re-enrutamiento:
   total_reroutes: 0.00
@@ -97,7 +97,7 @@ CONCLUSIONES
 
 1. El escenario 'incident_light' muestra el mayor impacto:
    - Retraso promedio: 0.00 minutos
-   - Retraso total acumulado: 0.00 horas
+   - Retraso total acumulado: 0.01 horas
    - Score de resiliencia: 100.0/100
 
 2. La red vial de Guatemala mantiene

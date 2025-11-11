@@ -4,7 +4,7 @@
 location:
   city: "Guatemala City, Guatemala"
   center_point: [14.6349, -90.5069]  # Lat, Lon del centro de Ciudad de Guatemala
-  radius_km: 2  # Radio de análisis en kilómetros
+  radius_km: 5  # Radio de análisis en kilómetro
   network_type: "drive"  # Tipo de red: drive, walk, bike, all
 
 # Parámetros de la red
@@ -15,11 +15,9 @@ network:
 
 # Parámetros de simulación
 simulation:
-  # Número de agentes (vehículos)
-  num_agents: 500
+  num_agents: 300  # Reducido de 1000 a 300
   
-  # Duración de la simulación en segundos (1 hora = 3600s)
-  duration: 3600
+  duration: 1800  # 30 minutos en lugar de 1 hora (reducido de 3600 a 1800)
   
   # Intervalo de tiempo entre pasos (segundos)
   time_step: 1
@@ -54,13 +52,13 @@ incidents:
     description: "Accidente moderado - 75% reducción"
     num_affected: 2
     capacity_reduction: 0.75
-    duration: 2700  # 45 minutos
+    duration: 1800  # Reducido de 2700 a 1800
   
   road_closure:
     description: "Cierre total de vía"
     num_affected: 1
     capacity_reduction: 1.0
-    duration: 3600  # 1 hora
+    duration: 1800  # Reducido de 3600 a 1800
 
 # Métricas a calcular
 metrics:
